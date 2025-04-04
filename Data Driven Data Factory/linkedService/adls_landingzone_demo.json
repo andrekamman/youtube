@@ -1,0 +1,11 @@
+{
+	"name": "adls_landingzone_demo",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureBlobFS",
+		"typeProperties": {
+			"url": "https://akstoragedemo.dfs.core.windows.net/"
+		}
+	}
+}

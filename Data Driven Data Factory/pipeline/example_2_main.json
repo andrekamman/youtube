@@ -1,0 +1,92 @@
+{
+	"name": "example_2_main",
+	"properties": {
+		"activities": [
+			{
+				"name": "servers",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select\n    sqlserver,\n    isNull('and d.name' + case when database_exclude is null then ' ' else 'not' end + 'in ' + replace(replace('(''' + coalesce(database_include,  database_exclude) + ''')', ',' ,''','''), ' ', ''), '') as and_databases\nfrom adf_metadata\n",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "ds_sqldb_metadata_demo",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "foreach_server",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "servers",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('servers').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "execute databases pipeline",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "example_2_databases",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"fqdn": {
+										"value": "@item().sqlserver",
+										"type": "Expression"
+									},
+									"and_databases": {
+										"value": "@item().and_databases",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"variables": {
+			"gndn": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "demo/example 2"
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-03-14T15:04:43Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

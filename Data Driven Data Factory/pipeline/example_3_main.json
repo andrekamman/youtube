@@ -1,0 +1,111 @@
+{
+	"name": "example_3_main",
+	"properties": {
+		"activities": [
+			{
+				"name": "servers",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select\n    id,\n    sqlserver,\n    isNull(' and name' + case when database_exclude is null then ' ' else 'not' end + 'in ' + replace(replace('(''' + coalesce(database_include,  database_exclude) + ''')', ',' ,''','''), ' ', ''), '') as and_databases,\n    isNull(' and t.name' + case when table_exclude is null then ' ' else ' not ' end + 'in ' + replace(replace('(''' + coalesce(table_include,  table_exclude) + ''')', ',' ,''','''), ' ', ''), '') as and_tables,\n    case when change_date_column is null then '' else ' and ' + change_date_column + ' > ''' + convert(char(23), change_date, 121) + '''' end as and_modified_1,\n    case when change_date_column is null then '' else ' and ' + change_date_column + ' <= ''' + convert(char(23), dateadd(mi, -1, getdate()), 121) + '''' end as and_modified_2,\n    case when change_date_column is null then '' else convert(char(23), dateadd(mi, -1, getdate()), 121) end as new_highwatermark,\n    case when change_date_column is null then '' else convert(char(10), dateadd(mi, -1, getdate()), 111) + '/' + replace(convert(char(5), dateadd(mi, -1, getdate()), 108), ':', '/') end as highwatermark_folder\nfrom adf_metadata",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "ds_sqldb_metadata_demo",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "foreach_server",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "servers",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('servers').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "execute databases pipeline",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "example_3_databases",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"fqdn": {
+										"value": "@item().sqlserver",
+										"type": "Expression"
+									},
+									"and_databases": {
+										"value": "@item().and_databases",
+										"type": "Expression"
+									},
+									"and_modified_1": {
+										"value": "@item().and_modified_1",
+										"type": "Expression"
+									},
+									"and_modified_2": {
+										"value": "@item().and_modified_2",
+										"type": "Expression"
+									},
+									"and_tables": {
+										"value": "@item().and_tables",
+										"type": "Expression"
+									},
+									"id": {
+										"value": "@item().id",
+										"type": "Expression"
+									},
+									"new_highwatermark": {
+										"value": "@item().new_highwatermark",
+										"type": "Expression"
+									},
+									"highwatermark_folder": {
+										"value": "@item().highwatermark_folder",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"folder": {
+			"name": "demo/example 3"
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-03-16T12:11:33Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

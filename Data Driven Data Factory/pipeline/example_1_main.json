@@ -1,0 +1,88 @@
+{
+	"name": "example_1_main",
+	"properties": {
+		"activities": [
+			{
+				"name": "servers",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select sqlserver from adf_metadata",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "ds_sqldb_metadata_demo",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "foreach_server",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "servers",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('servers').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "execute databases pipeline",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "example_1_databases",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"fqdn": {
+										"value": "@item().sqlserver",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"variables": {
+			"gndn": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "demo/example 1"
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-02-22T15:23:49Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

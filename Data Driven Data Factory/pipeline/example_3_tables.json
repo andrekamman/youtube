@@ -1,0 +1,167 @@
+{
+	"name": "example_3_tables",
+	"properties": {
+		"activities": [
+			{
+				"name": "tables",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "@concat('\nselect \n    ''['' + s.name + '']'' as schemaname,\n    ''['' + t.name + '']'' as tablename,\n    (\n        select \n            string_agg(cast(''['' + name + ''] as '' + replace(name, '' '', ''_'') as nvarchar(max)), '','') \n        from sys.columns \n        where columns.object_id = t.object_id\n    ) as columns,\n    replace(s.name, '' '', ''_'') as schemaname_cleaned,\n    replace(t.name, '' '', ''_'') as tablename_cleaned\nfrom sys.schemas s\njoin sys.tables t on s.schema_id = t.schema_id\nwhere 1=1\n', pipeline().parameters.and_tables,'\norder by s.name, t.name;')",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "ds_sqlsrv_source_demo",
+						"type": "DatasetReference",
+						"parameters": {
+							"fqdn": {
+								"value": "@pipeline().parameters.fqdn",
+								"type": "Expression"
+							},
+							"databasename": {
+								"value": "@pipeline().parameters.databasename",
+								"type": "Expression"
+							}
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "foreach table",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('tables').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "table_to_parquet",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "@concat('select ', item().columns, ' from ', item().schemaname, '.', item().tablename, ' where 1=1 ', pipeline().parameters.and_modified_1, pipeline().parameters.and_modified_2)",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "ParquetSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "ParquetWriteSettings"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_sqlsrv_source_demo",
+									"type": "DatasetReference",
+									"parameters": {
+										"fqdn": {
+											"value": "@pipeline().parameters.fqdn",
+											"type": "Expression"
+										},
+										"databasename": {
+											"value": "@pipeline().parameters.databasename",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "adls_landingzone_demo_parquet",
+									"type": "DatasetReference",
+									"parameters": {
+										"directory": {
+											"value": "@concat(pipeline().parameters.fqdn, '/', pipeline().parameters.databasename, '/', pipeline().parameters.highwatermark_folder, '/', item().schemaname_cleaned, '/')",
+											"type": "Expression"
+										},
+										"filename": {
+											"value": "@concat(item().tablename_cleaned, '.parquet')",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"fqdn": {
+				"type": "string"
+			},
+			"databasename": {
+				"type": "string"
+			},
+			"and_modified_1": {
+				"type": "string"
+			},
+			"and_modified_2": {
+				"type": "string"
+			},
+			"and_tables": {
+				"type": "string"
+			},
+			"highwatermark_folder": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "demo/example 3"
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-03-16T12:15:52Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,34 @@
+{
+	"name": "ds_sqlsrv_source_demo",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_sqlsrv_source_demo",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"fqdn": {
+					"value": "@dataset().fqdn",
+					"type": "Expression"
+				},
+				"databasename": {
+					"value": "@dataset().databasename",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"fqdn": {
+				"type": "string"
+			},
+			"databasename": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "demo"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

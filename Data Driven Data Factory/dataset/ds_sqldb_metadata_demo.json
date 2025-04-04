@@ -1,0 +1,16 @@
+{
+	"name": "ds_sqldb_metadata_demo",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_sqldb_metadata_demo",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "demo"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

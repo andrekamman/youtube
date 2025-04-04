@@ -1,0 +1,15 @@
+{
+	"name": "ls_sqldb_metadata_demo",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"server": "ak-fabric-demo-metadata.database.windows.net",
+			"database": "fabric-demo-landingzone-metadata",
+			"encrypt": "mandatory",
+			"trustServerCertificate": false,
+			"authenticationType": "SystemAssignedManagedIdentity"
+		}
+	}
+}
